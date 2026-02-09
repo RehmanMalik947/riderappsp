@@ -9,9 +9,17 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { theme } from '../theme/theme';
 
 const MOCK_ORDERS = [
+  { id: 'ORD-1234', customer: 'Imran Shahid', status: 'Pending', items: 3, total: '2500', address: 'DHA Phase 6, Lahore' },
+  { id: 'ORD-1235', customer: 'Ali Khan', status: 'Pending', items: 1, total: '800', address: 'Model Town, Lahore' },
+  { id: 'ORD-1236', customer: 'Zeeshan Ahmed', status: 'Pending', items: 5, total: '4200', address: 'Gulberg 3, Lahore' },
+
+  { id: 'ORD-1234', customer: 'Imran Shahid', status: 'Pending', items: 3, total: '2500', address: 'DHA Phase 6, Lahore' },
+  { id: 'ORD-1235', customer: 'Ali Khan', status: 'Pending', items: 1, total: '800', address: 'Model Town, Lahore' },
+  { id: 'ORD-1236', customer: 'Zeeshan Ahmed', status: 'Pending', items: 5, total: '4200', address: 'Gulberg 3, Lahore' },
   { id: 'ORD-1234', customer: 'Imran Shahid', status: 'Pending', items: 3, total: '2500', address: 'DHA Phase 6, Lahore' },
   { id: 'ORD-1235', customer: 'Ali Khan', status: 'Pending', items: 1, total: '800', address: 'Model Town, Lahore' },
   { id: 'ORD-1236', customer: 'Zeeshan Ahmed', status: 'Pending', items: 5, total: '4200', address: 'Gulberg 3, Lahore' },
@@ -27,6 +35,7 @@ const HomeScreen = ({ navigation }) => {
         Platform.OS === 'ios' && pressed && { opacity: 0.85 },
       ]}
     >
+      {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.orderId}>{item.id}</Text>
 
@@ -35,11 +44,23 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </View>
 
-      <Text style={styles.infoText}>{item.address}</Text>
+      {/* Address */}
+      <View style={styles.row}>
+        <Icon name="location-on" size={18} color={theme.colors.accent} />
+        <Text style={styles.infoText}>{item.address}</Text>
+      </View>
 
+      {/* Details */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailText}>{item.items} Items</Text>
-        <Text style={styles.detailText}>Rs. {item.total}</Text>
+        <View style={styles.detailItem}>
+          <Icon name="inventory" size={18} color={theme.colors.subText} />
+          <Text style={styles.detailText}>{item.items} Items</Text>
+        </View>
+
+        <View style={styles.detailItem}>
+          <Icon name="payments" size={18} color={theme.colors.subText} />
+          <Text style={styles.detailText}>Rs. {item.total}</Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -67,7 +88,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background, // WHITE
+    backgroundColor: theme.colors.background,
   },
   listContent: {
     padding: 16,
@@ -112,14 +133,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   badgeText: {
-    color: theme.colors.primary, // white text on blue
+    color: theme.colors.primary,
     fontWeight: '800',
     fontSize: 12,
   },
 
-  infoText: {
-    color: theme.colors.subText,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 14,
+  },
+  infoText: {
+    flex: 1,
+    color: theme.colors.subText,
   },
 
   detailsRow: {
@@ -128,6 +155,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     paddingTop: 12,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   detailText: {
     color: theme.colors.text,
