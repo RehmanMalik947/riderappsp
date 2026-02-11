@@ -96,17 +96,9 @@ const HomeScreen = ({ navigation, route }) => {
       {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.orderNo}>Order No: {item.orderNo}</Text>
-        <View style={[styles.badge, { backgroundColor: item.orderStatus === 'Accepted' ? theme.colors.primary : theme.colors.secondary }]}>
+        <View style={[styles.badge, { backgroundColor: item.orderStatus === 'AssignedToRider' ? theme.colors.primary : theme.colors.secondary }]} >
           <Text style={styles.badgeText}>{item.orderStatus}</Text>
         </View>
-      </View>
-
-      {/* Product Image and Name */}
-      <View style={styles.row}>
-        {item.orderLines[0]?.product?.image && (
-          <Image source={{ uri: item.orderLines[0].product.image }} style={styles.productImage} />
-        )}
-        <Text style={styles.productName}>{item.orderLines[0]?.product?.name}</Text>
       </View>
 
       {/* Delivery Address */}
@@ -123,10 +115,22 @@ const HomeScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.detailItem}>
-          <Icon name="attach-money" size={18} color={theme.colors.subText} />
+          {/* <Icon name="attach-money" size={18} color={theme.colors.subText} /> */}
           <Text style={styles.detailText}>Total: Rs. {item.totalAmount}</Text>
         </View>
       </View>
+
+      {/* View Button */}
+      <Pressable
+        onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
+        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+        style={({ pressed }) => [
+          styles.viewButton,
+          Platform.OS === 'ios' && pressed && { opacity: 0.85 },
+        ]}
+      >
+        <Text style={styles.viewButtonText}>View Details</Text>
+      </Pressable>
     </Pressable>
   );
 
@@ -241,18 +245,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 14,
   },
-  productImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.text,
-    flex: 1,
-  },
   infoText: {
     flex: 1,
     color: theme.colors.subText,
@@ -292,6 +284,20 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     fontSize: 16,
     padding: 20,
+  },
+
+  viewButton: {
+    marginTop: 10,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewButtonText: {
+    color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: '800',
   },
 });
 

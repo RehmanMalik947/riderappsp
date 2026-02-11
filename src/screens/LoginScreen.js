@@ -105,7 +105,7 @@ const LoginScreen = () => {
           <View style={styles.logoContainer}>
             <Icon name="delivery-dining" size={60} color={theme.colors.accent} />
           </View>
-          <Text style={styles.title}>Rider Spargus</Text>
+          <Text style={styles.title}>Rider Fleet</Text>
           <Text style={styles.subtitle}>Deliver happiness, earn respect.</Text>
         </View>
 

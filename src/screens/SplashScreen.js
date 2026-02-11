@@ -4,6 +4,7 @@ import { View, Text, Image, StyleSheet, StatusBar, Platform } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
@@ -11,10 +12,22 @@ const SplashScreen = () => {
   const { width, height } = useWindowDimensions();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('AppNavigator'); // Directs to the main navigation stack after splash
-    }, 3000); // 3 seconds for splash screen
-    return () => clearTimeout(timer);
+    const checkUser = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user');
+        // Give time for the animation/splash to be seen
+        setTimeout(() => {
+          if (user) {
+            navigation.replace('MainTabs');
+          } else {
+            navigation.replace('Login');
+          }
+        }, 2000);
+      } catch (e) {
+        navigation.replace('Login');
+      }
+    };
+    checkUser();
   }, [navigation]);
 
   // Responsive sizes

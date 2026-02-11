@@ -20,6 +20,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch order details from the API
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
@@ -37,10 +38,17 @@ const OrderDetailsScreen = ({ route, navigation }) => {
     fetchOrderDetails();
   }, [orderId]); // Fetch details whenever orderId changes
 
-  const handleAccept = () => setStatus('Accepted');
-  const handleDeliver = () => {
-    setStatus('Delivered');
-    setTimeout(() => navigation.goBack(), 1200);
+  const handleDeliver = async () => {
+    try {
+      const status = 4;
+       const res = await api.put(`/Order/updateStatus/${orderId}`, { status });
+      console.log(res)
+      // setStatus('Delivered'); 
+      setTimeout(() => navigation.goBack(), 1000); 
+    } catch (err) {
+      console.error('Failed to update status', err);
+      // setError('Failed to mark as delivered');
+    }
   };
 
   // Helper function to format the amount (e.g., Rs. 343.2)
@@ -124,7 +132,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
           ))}
 
           <View style={styles.divider} />
-          
+
           <View style={styles.itemRow}>
             <Text style={styles.totalText}>Total Amount</Text>
             <Text style={styles.totalAmount}>{formatAmount(order.totalAmount)}</Text>
@@ -134,19 +142,6 @@ const OrderDetailsScreen = ({ route, navigation }) => {
         {/* Actions */}
         <View style={styles.actionContainer}>
           {status === 'AssignedToRider' && (
-            <Pressable
-              onPress={handleAccept}
-              android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
-              style={({ pressed }) => [
-                styles.button,
-                pressed && Platform.OS === 'ios' && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={styles.buttonText}>Accept Order</Text>
-            </Pressable>
-          )}
-
-          {status === 'Accepted' && (
             <Pressable
               onPress={handleDeliver}
               android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
