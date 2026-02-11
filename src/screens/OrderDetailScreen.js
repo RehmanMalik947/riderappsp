@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,62 @@ import {
   Pressable,
   StatusBar,
   Platform,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { theme } from '../theme/theme';
+import api from '../service/api'; // Assuming you have the `api` instance already set up
 
 const OrderDetailsScreen = ({ route, navigation }) => {
-  const { order } = route.params;
-  const [status, setStatus] = useState(order.status);
+  const { orderId } = route.params;  // orderId is passed from the previous screen
+  const [order, setOrder] = useState(null);
+  const [status, setStatus] = useState('Loading...');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        const response = await api.get(`/Order/${orderId}`); // Hit the API with the dynamic orderId
+        setOrder(response.data); // Assuming the response contains the order data
+        setStatus(response.data.orderStatus);
+      } catch (err) {
+        console.error('Failed to fetch order details', err);
+        setError('Failed to load order details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
+  }, [orderId]); // Fetch details whenever orderId changes
 
   const handleAccept = () => setStatus('Accepted');
   const handleDeliver = () => {
     setStatus('Delivered');
     setTimeout(() => navigation.goBack(), 1200);
   };
+
+  // Helper function to format the amount (e.g., Rs. 343.2)
+  const formatAmount = (amount) => `Rs. ${amount.toFixed(2)}`;
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -27,45 +71,69 @@ const OrderDetailsScreen = ({ route, navigation }) => {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.headerCard}>
-          <Text style={styles.orderId}>{order.id}</Text>
-          <Text style={styles.statusText}>{status}</Text>
+          <Text style={styles.orderNo}>Order No: {order.orderNo}</Text>
+          <Text style={[styles.statusText, { color: theme.colors.accent }]}>{status}</Text>
         </View>
 
-        {/* Customer Info */}
+        {/* Order Information */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Customer Information</Text>
+          <Text style={styles.cardTitle}>Order Information</Text>
 
-          <Text style={styles.customerName}>{order.customer}</Text>
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Order Date:</Text>
+            <Text style={styles.itemText}>{new Date(order.orderDate).toLocaleString()}</Text>
+          </View>
 
-          <Text style={styles.infoText}>📍 {order.address}</Text>
-          <Text style={styles.infoText}>📞 +92 300 1234567</Text>
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Payment Method:</Text>
+            <Text style={styles.itemText}>{order.paymentMethod}</Text>
+          </View>
+
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Payment Status:</Text>
+            <Text style={styles.itemText}>{order.paymentStatus}</Text>
+          </View>
+
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Delivery Address:</Text>
+            <Text style={styles.itemText}>{order.deliveryAddress}</Text>
+          </View>
+
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Order Type:</Text>
+            <Text style={styles.itemText}>{order.orderType}</Text>
+          </View>
+
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>Total Amount:</Text>
+            <Text style={styles.totalAmount}>{formatAmount(order.totalAmount)}</Text>
+          </View>
         </View>
 
         {/* Order Summary */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Order Summary</Text>
 
-          <View style={styles.itemRow}>
-            <Text style={styles.itemText}>Chicken Biryani x 2</Text>
-            <Text style={styles.itemText}>Rs. 1200</Text>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.itemText}>Coke 1.5L x 1</Text>
-            <Text style={styles.itemText}>Rs. 200</Text>
-          </View>
+          {order.orderLines.map((line, index) => (
+            <View key={index} style={styles.itemRow}>
+              <Text style={styles.itemText}>
+                {line.product ? line.product.name : 'Product Name Not Available'} x {line.quantity}
+              </Text>
+              <Text style={styles.itemText}>{formatAmount(line.amount)}</Text>
+            </View>
+          ))}
 
           <View style={styles.divider} />
-
+          
           <View style={styles.itemRow}>
             <Text style={styles.totalText}>Total Amount</Text>
-            <Text style={styles.totalAmount}>Rs. {order.total}</Text>
+            <Text style={styles.totalAmount}>{formatAmount(order.totalAmount)}</Text>
           </View>
         </View>
 
         {/* Actions */}
         <View style={styles.actionContainer}>
-          {status === 'Pending' && (
+          {status === 'AssignedToRider' && (
             <Pressable
               onPress={handleAccept}
               android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
@@ -115,7 +183,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  orderId: {
+  orderNo: {
     fontSize: 14,
     fontWeight: '700',
     color: theme.colors.subText,
@@ -123,7 +191,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 22,
     fontWeight: '900',
-    color: theme.colors.text,
     marginTop: 6,
   },
 
@@ -141,18 +208,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
 
-  customerName: {
-    fontSize: 18,
-    fontWeight: '900',
-    marginBottom: 8,
-    color: theme.colors.text,
-  },
-  infoText: {
-    fontSize: 14,
-    marginTop: 6,
-    color: theme.colors.subText,
-  },
-
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -160,6 +215,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     color: theme.colors.text,
+    fontSize: 14,
   },
 
   divider: {

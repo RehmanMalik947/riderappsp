@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "524513720129",
+    "project_id": "sparedy-d77b5",
+    "storage_bucket": "sparedy-d77b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524513720129:android:a2525bc9bc8aa8674c93c0",
+        "android_client_info": {
+          "package_name": "com.riderappsp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSE3xGKMp_JgqIeBJYloCKq9ZSJBI4vFY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
