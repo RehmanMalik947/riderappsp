@@ -1,5 +1,4 @@
-// src/screens/ProfileScreen.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,32 +7,42 @@ import {
   StatusBar,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { theme } from '../theme/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation }) => {
-  const handleLogout = () => {
-    // clear auth later (AsyncStorage / token)
-    navigation.replace('Login');
+  const [user, setUser] = useState(null);
+
+  // Fetch user data from AsyncStorage
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        const parsedData = JSON.parse(userData);
+        setUser(parsedData);
+      } catch (error) {
+        console.error('Error fetching user data', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      // Clear AsyncStorage (logout)
+      await AsyncStorage.removeItem('user');
+      navigation.replace('Login');
+    } catch (error) {
+      console.error('Error during logout', error);
+    }
   };
 
   const Row = ({ icon, title, value, onPress }) => {
-    const content = (
-      <View style={styles.rowContent}>
-        <View style={styles.rowLeft}>
-          <View style={styles.iconBox}>
-            <Icon name={icon} size={20} color={theme.colors.accent} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowTitle}>{title}</Text>
-            {value ? <Text style={styles.rowValue}>{value}</Text> : null}
-          </View>
-        </View>
-        <Icon name="chevron-right" size={22} color={theme.colors.subText} />
-      </View>
-    );
-
     return (
       <Pressable
         onPress={onPress}
@@ -43,106 +52,103 @@ const ProfileScreen = ({ navigation }) => {
           Platform.OS === 'ios' && pressed && { opacity: 0.85 },
         ]}
       >
-        {content}
+        <View style={styles.rowContent}>
+          <View style={styles.rowLeft}>
+            <View style={styles.iconBox}>
+              <Icon name={icon} size={20} color={theme.colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>{title}</Text>
+              {value && <Text style={styles.rowValue}>{value}</Text>}
+            </View>
+          </View>
+          <Icon name="chevron-right" size={22} color={theme.colors.subText} />
+        </View>
       </Pressable>
     );
   };
 
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
-      {/* Header */}
-      <View style={styles.headerCard}>
-        <View style={styles.avatar}>
-          <Icon name="person" size={34} color={theme.colors.primary} />
+      <ScrollView style={styles.content}>
+        {/* Header */}
+        <View style={styles.headerCard}>
+          <View style={styles.avatar}>
+            <Icon name="person" size={34} color={theme.colors.primary} />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{user.userName}</Text>
+            <Text style={styles.sub}>Rider Partner</Text>
+          </View>
+
+          <View style={styles.statusPill}>
+            <View style={styles.dot} />
+            <Text style={styles.statusText}>Online</Text>
+          </View>
         </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>Imran Shahid</Text>
-          <Text style={styles.sub}>Rider Partner</Text>
+        {/* Account Info */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <Row
+            icon="call"
+            title="Phone Number"
+            value={user.phoneNumber}
+            onPress={() => {}}
+          />
+          <Row
+            icon="email"
+            title="Email"
+            value={user.userEmail}
+            onPress={() => {}}
+          />
         </View>
 
-        <View style={styles.statusPill}>
-          <View style={styles.dot} />
-          <Text style={styles.statusText}>Online</Text>
-        </View>
-      </View>
-
-      {/* Quick Stats */}
-      <View style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>Today</Text>
-        </View>
-
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>Rs. 4,800</Text>
-          <Text style={styles.statLabel}>Earnings</Text>
+        {/* Settings */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <Row icon="notifications" title="Notifications" value="On" onPress={() => {}} />
+          <Row
+            icon="security"
+            title="Privacy & Security"
+            onPress={() => navigation.navigate('PrivacyPolicy')}  // Assuming you have a PrivacyPolicy screen
+          />
+          <Row icon="help-outline" title="Help & Support" onPress={() => {}} />
         </View>
 
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>4.8</Text>
-          <Text style={styles.statLabel}>Rating</Text>
-        </View>
-      </View>
-
-      {/* Menu */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Account</Text>
-
-        <Row
-          icon="call"
-          title="Phone Number"
-          value="+92 300 1234567"
-          onPress={() => {}}
-        />
-        <Row
-          icon="email"
-          title="Email"
-          value="rider@spargus.com"
-          onPress={() => {}}
-        />
-        <Row
-          icon="location-on"
-          title="City"
-          value="Lahore"
-          onPress={() => {}}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-
-        <Row icon="notifications" title="Notifications" value="On" onPress={() => {}} />
-        <Row icon="security" title="Privacy & Security" onPress={() => {}} />
-        <Row icon="help-outline" title="Help & Support" onPress={() => {}} />
-      </View>
-
-      {/* Logout */}
-      <Pressable
-        onPress={handleLogout}
-        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
-        style={({ pressed }) => [
-          styles.logoutBtn,
-          Platform.OS === 'ios' && pressed && { opacity: 0.85 },
-        ]}
-      >
-        <Icon name="logout" size={18} color={theme.colors.primary} />
-        <Text style={styles.logoutText}>Logout</Text>
-      </Pressable>
-    </ScrollView>
+        {/* Logout */}
+        <Pressable
+          onPress={handleLogout}
+          android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            Platform.OS === 'ios' && pressed && { opacity: 0.85 },
+          ]}
+        >
+          <Icon name="logout" size={18} color={theme.colors.primary} />
+          <Text style={styles.logoutText}>Logout</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background, // white
+    backgroundColor: theme.colors.background,
   },
   content: {
     padding: 16,
@@ -199,35 +205,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.colors.text,
     fontSize: 12,
-  },
-
-  statsCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 16,
-    padding: 14,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: theme.colors.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.subText,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: theme.colors.border,
   },
 
   card: {

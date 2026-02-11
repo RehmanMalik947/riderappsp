@@ -7,8 +7,8 @@ import {
   Text,
   StatusBar,
   Platform,
-  ActivityIndicator,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';  // Import SafeAreaView
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -16,50 +16,73 @@ import { theme } from '../theme/theme';
 import api from '../service/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const HomeScreen = ({ navigation }) => {
-  const [orders, setOrders] = useState([]); // Stores fetched orders
-  const [loading, setLoading] = useState(true); // Tracks loading state
-  const [user, setUser] = useState(); // Stores user data
-  const [error, setError] = useState(null); // Stores error message
-  
-  // Fetch user data from AsyncStorage
+const HomeScreen = ({ navigation, route }) => {
+  const { statusFilter = 'Active' } = route.params || {};
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const fetchUser = async () => {
     try {
       const storedUser = await AsyncStorage.getItem('user');
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        console.log(JSON.parse(storedUser))
+      }
     } catch (err) {
       console.error('Error fetching user', err);
-      setError('Failed to load user data');
     }
   };
 
   useEffect(() => {
     fetchUser();
   }, []);
-  
-  const riderId = user?.userId; // Assuming user object contains userId
 
-  // Fetch orders from the API
-  const fetchOrders = async () => {
-    if (!riderId) return;  // If userId is not available, don't fetch orders
-    
+  const riderId = user?.userId;
+
+  const fetchOrders = async (showLoading = true) => {
+    if (!riderId) return;
+    if (showLoading) setLoading(true);
+    console.log(riderId)
+
     try {
       const response = await api.get(`/Order/GetAllRiderOrders/${riderId}`);
-      setOrders(response.data); // Assuming the response contains the orders
+      console.log(response)
+      if (response.data) {
+        // Filter orders based on statusFilter
+        const filtered = response.data.filter(order => {
+          if (statusFilter === 'Active') {
+            return order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled';
+          }
+          return order.orderStatus === 'Delivered';
+        });
+        setOrders(filtered);
+      }
+      setError(null);
     } catch (err) {
       console.error('Failed to fetch orders', err);
       setError('Failed to load orders');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     if (riderId) {
       fetchOrders();
+
+      // Implement 1-minute polling
+      const interval = setInterval(() => {
+        console.log('Refreshing orders (polling)...');
+        fetchOrders(false); // Don't show full-screen loader during polling
+      }, 60000);
+
+      return () => clearInterval(interval);
     }
-  }, [riderId]); // Only fetch orders if riderId is available
+  }, [riderId, statusFilter]);
 
   const renderItem = ({ item }) => (
     <Pressable
@@ -133,12 +156,26 @@ const HomeScreen = ({ navigation }) => {
       <FlatList
         data={orders}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
+        onRefresh={() => fetchOrders(false)}
+        refreshing={isRefreshing}
         ListHeaderComponent={() => (
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Active Orders</Text>
-            <Text style={styles.headerSubtitle}>Available for pickup</Text>
+            <Text style={styles.headerTitle}>
+              {statusFilter === 'Active' ? 'Active Orders' : 'Order History'}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {statusFilter === 'Active'
+                ? 'Orders available for pickup & delivery'
+                : 'Your completed deliveries'}
+            </Text>
+          </View>
+        )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Icon name="assignment" size={64} color={theme.colors.border} />
+            <Text style={styles.emptyText}>No {statusFilter.toLowerCase()} orders found</Text>
           </View>
         )}
       />
@@ -238,6 +275,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: theme.colors.subText,
+    fontWeight: '600',
+  },
   errorText: {
     textAlign: 'center',
     color: theme.colors.error,

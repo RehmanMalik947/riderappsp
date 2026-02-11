@@ -14,10 +14,15 @@ const api = axios.create({
   },
 });
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 // Logout helper
-export const logout = () => {
-  localStorage.removeItem("user");
-  window.location.href = "/login";
+export const logout = async () => {
+  try {
+    await AsyncStorage.removeItem("user");
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
 };
 
 export default api;

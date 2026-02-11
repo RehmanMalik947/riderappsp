@@ -43,9 +43,20 @@ const BottomTabs = () => {
         ),
       })}
     >
-      <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="OrdersTab" component={OrdersScreen} />
-      <Tab.Screen name="ProfileTab" component={ProfileScreen} />
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        initialParams={{ statusFilter: 'Active' }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={HomeScreen}
+        initialParams={{ statusFilter: 'Delivered' }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+      />
     </Tab.Navigator>
   );
 };
