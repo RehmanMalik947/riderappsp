@@ -54,9 +54,9 @@ const HomeScreen = ({ navigation, route }) => {
         // Filter orders based on statusFilter
         const filtered = response.data.filter(order => {
           if (statusFilter === 'Active') {
-            return order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled';
+            return order.orderStatus !== 'Completed' && order.orderStatus !== 5;
           }
-          return order.orderStatus === 'Delivered';
+          return order.orderStatus === 'Completed';
         });
         setOrders(filtered);
       }
@@ -86,7 +86,7 @@ const HomeScreen = ({ navigation, route }) => {
 
   const renderItem = ({ item }) => (
     <Pressable
-      onPress={() => navigation.navigate('OrderDetails', { order: item })}
+      onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
       android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
       style={({ pressed }) => [
         styles.card,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewButtonText: {
-    color: theme.colors.white,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '800',
   },

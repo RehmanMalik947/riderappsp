@@ -39,17 +39,25 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   }, [orderId]); // Fetch details whenever orderId changes
 
   const handleDeliver = async () => {
-    try {
-      const status = 4;
-       const res = await api.put(`/Order/updateStatus/${orderId}`, { status });
-      console.log(res)
-      // setStatus('Delivered'); 
-      setTimeout(() => navigation.goBack(), 1000); 
-    } catch (err) {
-      console.error('Failed to update status', err);
-      // setError('Failed to mark as delivered');
-    }
-  };
+  try {
+    // Send the status "4" directly in the request body
+    const res = await api.put(`/Order/updateStatus/${orderId}`, '4', {
+      headers: {
+        'Content-Type': 'application/json-patch+json',
+        'X-Client-Db': 'Rubaika',
+        'Accept': '*/*'
+      }
+    });
+
+    // After successful API call, update the status
+    setStatus('Delivered');
+    setTimeout(() => navigation.goBack(), 1200); // Navigate back after short delay
+  } catch (err) {
+    console.error('Failed to update status', err);
+    setError('Failed to mark as delivered');
+  }
+};
+
 
   // Helper function to format the amount (e.g., Rs. 343.2)
   const formatAmount = (amount) => `Rs. ${amount.toFixed(2)}`;
