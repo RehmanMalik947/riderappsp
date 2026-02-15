@@ -10,14 +10,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { theme } from '../theme/theme';
+import theme from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
 
-  // Fetch user data from AsyncStorage
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -34,7 +33,6 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     try {
-      // Clear AsyncStorage (logout)
       await AsyncStorage.removeItem('user');
       navigation.replace('Login');
     } catch (error) {
@@ -42,35 +40,36 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const Row = ({ icon, title, value, onPress }) => {
+  const Row = ({ icon, title, value, onPress, isLast = false, color = theme.colors.primary }) => {
     return (
       <Pressable
         onPress={onPress}
-        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+        android_ripple={{ color: 'rgba(79, 70, 229, 0.1)' }}
         style={({ pressed }) => [
           styles.row,
-          Platform.OS === 'ios' && pressed && { opacity: 0.85 },
+          pressed && Platform.OS === 'ios' && { opacity: 0.7 },
         ]}
       >
         <View style={styles.rowContent}>
           <View style={styles.rowLeft}>
-            <View style={styles.iconBox}>
-              <Icon name={icon} size={20} color={theme.colors.accent} />
+            <View style={[styles.iconBox, { backgroundColor: color + '12' }]}>
+              <Icon name={icon} size={20} color={color} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>{title}</Text>
               {value && <Text style={styles.rowValue}>{value}</Text>}
             </View>
           </View>
-          <Icon name="chevron-right" size={22} color={theme.colors.subText} />
+          <Icon name="chevron-right" size={20} color={theme.colors.textLight} />
         </View>
+        {!isLast && <View style={styles.rowDivider} />}
       </Pressable>
     );
   };
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </SafeAreaView>
@@ -81,65 +80,85 @@ const ProfileScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
-      <ScrollView style={styles.content}>
-        {/* Header */}
-        <View style={styles.headerCard}>
-          <View style={styles.avatar}>
-            <Icon name="person" size={34} color={theme.colors.primary} />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header Profile Section */}
+        <View style={styles.header}>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatarCircle}>
+              <Icon name="person" size={40} color={theme.colors.white} />
+            </View>
+            <View style={styles.onlineIndicator} />
           </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name}>{user.userName}</Text>
-            <Text style={styles.sub}>Rider Partner</Text>
-          </View>
+          <Text style={styles.userName}>{user.userName || 'Rider'}</Text>
+          <Text style={styles.userRole}>Verified Logistics Partner</Text>
 
-          <View style={styles.statusPill}>
-            <View style={styles.dot} />
-            <Text style={styles.statusText}>Online</Text>
+          {/* <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>4.9</Text>
+              <Text style={styles.statLabel}>Rating</Text>
+            </View>
+            <View style={styles.vDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>124</Text>
+              <Text style={styles.statLabel}>Deliveries</Text>
+            </View>
+          </View> */}
+        </View>
+
+        {/* Account Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>ACCOUNT DETAILS</Text>
+          <View style={styles.rowCard}>
+            <Row
+              icon="phone-iphone"
+              title="Phone"
+              value={user.phoneNumber || 'Not provided'}
+              onPress={() => { }}
+            />
+            <Row
+              icon="alternate-email"
+              title="Work Email"
+              value={user.userEmail || 'Not provided'}
+              onPress={() => { }}
+              isLast={true}
+            />
           </View>
         </View>
 
-        {/* Account Info */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <Row
-            icon="call"
-            title="Phone Number"
-            value={user.phoneNumber}
-            onPress={() => {}}
-          />
-          <Row
-            icon="email"
-            title="Email"
-            value={user.userEmail}
-            onPress={() => {}}
-          />
+        {/* Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>PREFERENCES</Text>
+          <View style={styles.rowCard}>
+            <Row icon="notifications-none" title="Notifications" value="Enabled" onPress={() => { }} />
+            <Row
+              icon="security"
+              title="Privacy & Safety"
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+            />
+            <Row
+              icon="help-outline"
+              title="Help Center"
+              onPress={() => { }}
+              isLast={true}
+            />
+          </View>
         </View>
 
-        {/* Settings */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <Row icon="notifications" title="Notifications" value="On" onPress={() => {}} />
-          <Row
-            icon="security"
-            title="Privacy & Security"
-            onPress={() => navigation.navigate('PrivacyPolicy')}  // Assuming you have a PrivacyPolicy screen
-          />
-          <Row icon="help-outline" title="Help & Support" onPress={() => {}} />
-        </View>
-
-        {/* Logout */}
+        {/* Actions */}
         <Pressable
           onPress={handleLogout}
-          android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+          android_ripple={{ color: 'rgba(239, 68, 68, 0.1)' }}
           style={({ pressed }) => [
-            styles.logoutBtn,
-            Platform.OS === 'ios' && pressed && { opacity: 0.85 },
+            styles.logoutButton,
+            pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
           ]}
         >
-          <Icon name="logout" size={18} color={theme.colors.primary} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Icon name="logout" size={20} color={theme.colors.error} />
+          <Text style={styles.logoutText}>Sign Out</Text>
         </Pressable>
+
+        <Text style={styles.versionText}>Version 1.0.4 (Stable)</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -150,131 +169,161 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  content: {
-    padding: 16,
-    paddingBottom: 28,
-    gap: 16,
-  },
-
-  headerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 16,
-    padding: 16,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.accent,
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  name: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: theme.colors.text,
+  scrollContent: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
-  sub: {
-    marginTop: 2,
-    color: theme.colors.subText,
-    fontWeight: '700',
-  },
-  statusPill: {
-    flexDirection: 'row',
+  header: {
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: theme.spacing.md,
   },
-  statusText: {
+  avatarCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.medium,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.colors.success,
+    borderWidth: 4,
+    borderColor: theme.colors.background,
+  },
+  userName: {
+    fontSize: 24,
     fontWeight: '800',
     color: theme.colors.text,
-    fontSize: 12,
+    letterSpacing: -0.5,
   },
-
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
-  },
-  sectionTitle: {
+  userRole: {
     fontSize: 14,
-    fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 6,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    marginTop: 2,
   },
-
-  row: {
-    borderRadius: 12,
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: theme.borderRadius.lg,
+    marginTop: theme.spacing.lg,
+    ...theme.shadows.small,
+  },
+  statItem: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: theme.colors.textLight,
+    fontWeight: '600',
+  },
+  vDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: theme.colors.border,
+  },
+  section: {
+    marginBottom: theme.spacing.xl,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: theme.colors.textLight,
+    letterSpacing: 1.5,
+    marginBottom: theme.spacing.sm,
+    marginLeft: 4,
+  },
+  rowCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.small,
     overflow: 'hidden',
+  },
+  row: {
+    paddingHorizontal: theme.spacing.lg,
   },
   rowContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 12,
+    paddingVertical: 16,
   },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     flex: 1,
-    paddingRight: 10,
+    gap: 16,
   },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(79,142,247,0.12)',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   rowTitle: {
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '700',
     color: theme.colors.text,
   },
   rowValue: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
     marginTop: 2,
-    fontWeight: '700',
-    color: theme.colors.subText,
+    fontWeight: '500',
   },
-
-  logoutBtn: {
-    height: 54,
-    borderRadius: 14,
-    backgroundColor: theme.colors.accent,
+  rowDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    marginLeft: 56,
+  },
+  logoutButton: {
+    height: 56,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.error + '10',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.error + '20',
   },
   logoutText: {
-    color: theme.colors.primary,
+    color: theme.colors.error,
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '700',
+  },
+  versionText: {
+    textAlign: 'center',
+    marginTop: theme.spacing.xl,
+    fontSize: 12,
+    color: theme.colors.textLight,
+    fontWeight: '500',
   },
 });
 

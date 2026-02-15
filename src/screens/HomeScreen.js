@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';  // Import SafeAreaView
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { theme } from '../theme/theme';
+import theme from '../theme/theme';
 import api from '../service/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from '@react-navigation/native';
 
 const HomeScreen = ({ navigation, route }) => {
   const { statusFilter = 'Active' } = route.params || {};
@@ -23,13 +24,13 @@ const HomeScreen = ({ navigation, route }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isFocused = useIsFocused(); // Fixed typo isfocussed to isFocused
 
   const fetchUser = async () => {
     try {
       const storedUser = await AsyncStorage.getItem('user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
-        console.log(JSON.parse(storedUser))
       }
     } catch (err) {
       console.error('Error fetching user', err);
@@ -45,13 +46,10 @@ const HomeScreen = ({ navigation, route }) => {
   const fetchOrders = async (showLoading = true) => {
     if (!riderId) return;
     if (showLoading) setLoading(true);
-    console.log(riderId)
 
     try {
       const response = await api.get(`/Order/GetAllRiderOrders/${riderId}`);
-      console.log(response)
       if (response.data) {
-        // Filter orders based on statusFilter
         const filtered = response.data.filter(order => {
           if (statusFilter === 'Active') {
             return order.orderStatus !== 'Completed' && order.orderStatus !== 5;
@@ -71,84 +69,87 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   useEffect(() => {
+    if (isFocused) {
+      fetchOrders();
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
     if (riderId) {
       fetchOrders();
-
-      // Implement 1-minute polling
       const interval = setInterval(() => {
-        console.log('Refreshing orders (polling)...');
-        fetchOrders(false); // Don't show full-screen loader during polling
+        fetchOrders(false);
       }, 60000);
-
       return () => clearInterval(interval);
     }
   }, [riderId, statusFilter]);
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'AssignedToRider': return theme.colors.info;
+      case 'Delivered':
+      case 'Completed': return theme.colors.success;
+      case 'Cancelled': return theme.colors.error;
+      default: return theme.colors.primary;
+    }
+  };
+
   const renderItem = ({ item }) => (
     <Pressable
       onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
-      android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+      android_ripple={{ color: 'rgba(79, 70, 229, 0.1)' }}
       style={({ pressed }) => [
         styles.card,
-        Platform.OS === 'ios' && pressed && { opacity: 0.85 },
+        Platform.OS === 'ios' && pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
       ]}
     >
-      {/* Header */}
       <View style={styles.cardHeader}>
-        <Text style={styles.orderNo}>Order No: {item.orderNo}</Text>
-        <View style={[styles.badge, { backgroundColor: item.orderStatus === 'AssignedToRider' ? theme.colors.primary : theme.colors.secondary }]} >
-          <Text style={styles.badgeText}>{item.orderStatus}</Text>
+        <View>
+          <Text style={styles.orderLabel}>ORDER NO</Text>
+          <Text style={styles.orderNo}>#{item.orderNo}</Text>
+        </View>
+        <View style={[styles.badge, { backgroundColor: getStatusColor(item.orderStatus) + '20' }]}>
+          <Text style={[styles.badgeText, { color: getStatusColor(item.orderStatus) }]}>
+            {item.orderStatus}
+          </Text>
         </View>
       </View>
 
-      {/* Delivery Address */}
-      <View style={styles.row}>
-        <Icon name="location-on" size={18} color={theme.colors.accent} />
-        <Text style={styles.infoText}>{item.deliveryAddress}</Text>
-      </View>
+      <View style={styles.divider} />
 
-      {/* Payment and Total Amount */}
-      <View style={styles.detailsRow}>
-        <View style={styles.detailItem}>
-          <Icon name="payment" size={18} color={theme.colors.subText} />
-          <Text style={styles.detailText}>Payment: {item.paymentMethod}</Text>
+      <View style={styles.infoSection}>
+        <View style={styles.row}>
+          <View style={styles.iconContainer}>
+            <Icon name="location-pin" size={18} color={theme.colors.primary} />
+          </View>
+          <Text style={styles.infoText} numberOfLines={2}>{item.deliveryAddress}</Text>
         </View>
 
-        <View style={styles.detailItem}>
-          {/* <Icon name="attach-money" size={18} color={theme.colors.subText} /> */}
-          <Text style={styles.detailText}>Total: Rs. {item.totalAmount}</Text>
+        <View style={styles.detailsRow}>
+          <View style={styles.detailItem}>
+            {/* <Icon name="payments" size={16} color={theme.colors.textSecondary} />
+            <Text style={styles.detailText}>{item.paymentMethod}</Text> */}
+          </View>
+
+          <View style={styles.priceBadge}>
+            <Text style={styles.priceText}>Rs. {item.totalAmount}</Text>
+          </View>
         </View>
       </View>
 
-      {/* View Button */}
-      <Pressable
-        onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
-        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
-        style={({ pressed }) => [
-          styles.viewButton,
-          Platform.OS === 'ios' && pressed && { opacity: 0.85 },
-        ]}
-      >
+      <View style={styles.viewButton}>
         <Text style={styles.viewButtonText}>View Details</Text>
-      </Pressable>
+        <Icon name="chevron-right" size={20} color={theme.colors.white} />
+      </View>
     </Pressable>
   );
 
-  // Loading or error handling UI
-  if (loading) {
+  if (loading && !isRefreshing) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.loadingText}>Fetching your orders...</Text>
       </SafeAreaView>
     );
   }
@@ -167,19 +168,25 @@ const HomeScreen = ({ navigation, route }) => {
         ListHeaderComponent={() => (
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {statusFilter === 'Active' ? 'Active Orders' : 'Order History'}
+              {statusFilter === 'Active' ? 'Incoming Orders' : 'Order History'}
             </Text>
-            <Text style={styles.headerSubtitle}>
-              {statusFilter === 'Active'
-                ? 'Orders available for pickup & delivery'
-                : 'Your completed deliveries'}
-            </Text>
+            <View style={styles.headerDetail}>
+              <View style={styles.dot} />
+              <Text style={styles.headerSubtitle}>
+                {statusFilter === 'Active'
+                  ? `${orders.filter((e)=>e.orderStatus === 'AssignedToRider').length} orders pending delivery`
+                  : `You've completed ${orders.length} deliveries`}
+              </Text>
+            </View>
           </View>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Icon name="assignment" size={64} color={theme.colors.border} />
-            <Text style={styles.emptyText}>No {statusFilter.toLowerCase()} orders found</Text>
+            <View style={styles.emptyIconCircle}>
+              <Icon name="auto-awesome-motion" size={48} color={theme.colors.textLight} />
+            </View>
+            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptyText}>No {statusFilter.toLowerCase()} orders at the moment.</Text>
           </View>
         )}
       />
@@ -192,70 +199,118 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  listContent: {
-    padding: 16,
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
+  loadingText: {
+    marginTop: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  listContent: {
+    padding: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+  },
   header: {
-    marginBottom: 24,
+    marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 28,
+    fontWeight: '800',
     color: theme.colors.text,
+    letterSpacing: -0.5,
+  },
+  headerDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.xs,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.success,
+    marginRight: 8,
   },
   headerSubtitle: {
-    marginTop: 6,
-    color: theme.colors.subText,
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
   },
-
   card: {
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 16,
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.surface,
+    ...theme.shadows.medium,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  orderLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.textLight,
+    letterSpacing: 1,
   },
   orderNo: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: theme.colors.text,
+    marginTop: 2,
   },
-
   badge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: theme.borderRadius.round,
   },
   badgeText: {
-    color: theme.colors.white,
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 12,
   },
-
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.surfaceSecondary,
+    marginVertical: theme.spacing.sm,
+  },
+  infoSection: {
+    marginVertical: theme.spacing.sm,
+  },
   row: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: theme.spacing.md,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary + '10',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 14,
   },
   infoText: {
     flex: 1,
-    color: theme.colors.subText,
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
   },
-
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingTop: 12,
+    alignItems: 'center',
   },
   detailItem: {
     flexDirection: 'row',
@@ -263,41 +318,69 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   detailText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  priceBadge: {
+    backgroundColor: theme.colors.surfaceSecondary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  priceText: {
     color: theme.colors.text,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  viewButton: {
+    marginTop: theme.spacing.md,
+    height: 48,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    ...theme.shadows.small,
+  },
+  viewButtonText: {
+    color: theme.colors.white,
+    fontSize: 15,
     fontWeight: '700',
   },
-
   emptyContainer: {
-    padding: 40,
+    padding: theme.spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
+    marginTop: theme.spacing.xl,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.colors.text,
+    marginBottom: 4,
   },
   emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: theme.colors.subText,
-    fontWeight: '600',
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
   errorText: {
     textAlign: 'center',
     color: theme.colors.error,
-    fontSize: 16,
-    padding: 20,
-  },
-
-  viewButton: {
-    marginTop: 10,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: theme.colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    padding: 24,
+    fontWeight: '600',
   },
 });
 

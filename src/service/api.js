@@ -1,8 +1,7 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_URL = "https://api.al-aminhmb.com/api";
-export const CompanyCode = "Rubaika";
-// export const CompanyCode = "ALAmin";
 
 export const no_image = "https://api.al-aminhmb.com/AlAmin/assets/images/Category/no-image.png";
 
@@ -10,11 +9,23 @@ const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json-patch+json",
-    "X-Client-Db": CompanyCode, // 👈 YE ADD KIYA
   },
 });
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// Request interceptor to add dynamic headers
+api.interceptors.request.use(
+  async (config) => {
+    const clientDb = await AsyncStorage.getItem("x-client-db");
+    if (clientDb) {
+      config.headers["X-Client-Db"] = clientDb;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 
 // Logout helper
 export const logout = async () => {

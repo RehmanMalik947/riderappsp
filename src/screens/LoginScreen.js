@@ -10,8 +10,9 @@ import {
   Pressable,
   StatusBar,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { theme } from '../theme/theme';
+import theme from '../theme/theme';
 import api from '../service/api'
 import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
@@ -23,23 +24,22 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isCodeFocused, setIsCodeFocused] = useState(false);
+
   const navigation = useNavigation();
   const app = getApp();
   const messaging = getMessaging(app);
+
   const sendFcmTokenToBackend = async (userId) => {
     try {
-      if (!userId) {
-        console.log('userId missing, skipping FCM save');
-        return;
-      }
-
+      if (!userId) return;
       const fcmToken = await getToken(messaging);
-      if (!fcmToken) {
-        console.log('FCM token empty, skipping FCM save');
-        return;
-      }
+      if (!fcmToken) return;
 
       const payload = {
         userId,
@@ -50,174 +50,266 @@ const LoginScreen = () => {
         appVersion: 'string',
       };
 
-      console.log('FCM payload:', payload);
       await api.post('/FCM/SaveFCMDeviceToken', payload);
-      console.log('FCM token sent to backend successfully');
     } catch (error) {
-      console.log('FCM save error status:', error?.response?.status);
-      console.log('FCM save error data:', error?.response?.data);
       console.log('FCM save error:', error?.message || error);
     }
   };
 
   const handleLogin = async () => {
+    if (!email || !password || !companyCode) {
+      alert('Please fill in all fields (Email, Password, and Company Code)');
+      return;
+    }
+
+    const code = companyCode.trim().toUpperCase();
+    let dbName = '';
+
+    if (code === 'RBK') {
+      dbName = 'Rubaika';
+    } else if (code === 'ALAMN') {
+      dbName = 'ALAmin';
+    } else {
+      alert('Invalid Company Code');
+      return;
+    }
+
+    setLoading(true);
     const payload = { email: email.trim(), password };
 
     try {
-      const res = await api.post('/Account/Login', payload);
-      console.log('Response:', res);
-      const data = res?.data;
-      sendFcmTokenToBackend(data.userId);
-      navigation.replace('MainTabs')
+      // First save the dbName so interceptor can use it if needed for login itself
+      // or subsequent calls.
+      await AsyncStorage.setItem('x-client-db', dbName);
 
+      const res = await api.post(`/Account/RiderLogin/${code}`, payload);
+      const data = res?.data;
+      console.log(data);
 
       if (data) {
         await AsyncStorage.setItem('user', JSON.stringify(data));
-        // setdata(data);
-
+        sendFcmTokenToBackend(data.userId);
+        navigation.replace('MainTabs');
       }
     } catch (error) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        console.error('Error response:', error.response);
-        alert('Error: ' + error.response?.data?.message || 'Unknown error');
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('Error request:', error.request);
-        alert('Network error, please try again later.');
-      } else {
-        // Something happened in setting up the request
-        console.error('Error message:', error.message);
-        alert('Error: ' + error.message);
-      }
+      const msg = error.response?.data?.message || error.message || 'Login failed';
+      alert(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="#1A1A1A" />
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Icon name="delivery-dining" size={60} color={theme.colors.accent} />
-          </View>
-          <Text style={styles.title}>Rider Fleet</Text>
-          <Text style={styles.subtitle}>Deliver happiness, earn respect.</Text>
-        </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primaryDark} />
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Icon name="email" size={20} color={theme.colors.subText} style={styles.inputIcon} />
-            <TextInput
-              placeholder="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor={theme.colors.subText}
-              selectionColor={theme.colors.accent}
-            />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Icon name="delivery-dining" size={48} color={theme.colors.white} />
+              </View>
+            </View>
+            <Text style={styles.title}>Rider Fleet</Text>
+            <Text style={styles.subtitle}>Fast. Secure. Reliable.</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Icon name="lock" size={20} color={theme.colors.subText} style={styles.inputIcon} />
-            <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              style={[styles.input, { flex: 1 }]}
-              secureTextEntry={!showPassword}
-              placeholderTextColor={theme.colors.subText}
-              selectionColor={theme.colors.accent}
-            />
-            <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-              <Icon name={showPassword ? "visibility" : "visibility-off"} size={20} color={theme.colors.subText} />
+          <View style={styles.form}>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={[
+                styles.inputContainer,
+                isEmailFocused && styles.inputContainerFocused
+              ]}>
+                <Icon
+                  name="mail-outline"
+                  size={20}
+                  color={isEmailFocused ? theme.colors.primary : theme.colors.textLight}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="name@company.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setIsEmailFocused(true)}
+                  onBlur={() => setIsEmailFocused(false)}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={theme.colors.textLight}
+                  selectionColor={theme.colors.primary}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={[
+                styles.inputContainer,
+                isPasswordFocused && styles.inputContainerFocused
+              ]}>
+                <Icon
+                  name="lock-outline"
+                  size={20}
+                  color={isPasswordFocused ? theme.colors.primary : theme.colors.textLight}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setIsPasswordFocused(true)}
+                  onBlur={() => setIsPasswordFocused(false)}
+                  style={styles.input}
+                  secureTextEntry={!showPassword}
+                  placeholderTextColor={theme.colors.textLight}
+                  selectionColor={theme.colors.primary}
+                />
+                <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                  <Icon
+                    name={showPassword ? "visibility" : "visibility-off"}
+                    size={20}
+                    color={theme.colors.textLight}
+                  />
+                </Pressable>
+              </View>
+            </View>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Company Code</Text>
+              <View style={[
+                styles.inputContainer,
+                isCodeFocused && styles.inputContainerFocused
+              ]}>
+                <Icon
+                  name="business"
+                  size={20}
+                  color={isCodeFocused ? theme.colors.primary : theme.colors.textLight}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="Company Code"
+                  value={companyCode}
+                  onChangeText={setCompanyCode}
+                  onFocus={() => setIsCodeFocused(true)}
+                  onBlur={() => setIsCodeFocused(false)}
+                  style={styles.input}
+                  autoCapitalize="characters"
+                  placeholderTextColor={theme.colors.textLight}
+                  selectionColor={theme.colors.primary}
+                />
+              </View>
+            </View>
+
+            <Pressable
+              onPress={handleLogin}
+              disabled={loading}
+              android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+              style={({ pressed }) => [
+                styles.button,
+                (pressed || loading) && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.colors.white} />
+              ) : (
+                <View style={styles.buttonInner}>
+                  <Text style={styles.buttonText}>Sign In</Text>
+                  <Icon name="arrow-forward" size={18} color={theme.colors.white} />
+                </View>
+              )}
             </Pressable>
-          </View>
 
-          <Pressable
-            onPress={handleLogin}
-            disabled={loading}
-            android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
-            style={({ pressed }) => [
-              styles.button,
-              (pressed || loading) && { opacity: 0.9 },
-            ]}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </Pressable>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+            {/* <View style={styles.footer}>
+              <Text style={styles.footerText}>Problem logging in? </Text>
+              <Pressable>
+                <Text style={styles.footerLink}>Contact Support</Text>
+              </Pressable>
+            </View> */}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.colors.primaryDark,
   },
-  content: {
+  keyboardView: {
     flex: 1,
-    padding: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    padding: theme.spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: theme.spacing.xl,
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(79, 142, 247, 0.1)',
+    marginBottom: theme.spacing.md,
+  },
+  logoCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   title: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.colors.white,
     letterSpacing: -0.5,
   },
   subtitle: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 16,
-    color: '#A1A1A1',
+    color: 'rgba(255, 255, 255, 0.6)',
     fontWeight: '500',
   },
   form: {
-    backgroundColor: '#262626',
-    padding: 24,
-    borderRadius: 24,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: '#333333',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    ...theme.shadows.large,
+  },
+  inputWrapper: {
+    marginBottom: theme.spacing.md,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 56,
     borderWidth: 1.5,
-    borderColor: '#333333',
-    borderRadius: 16,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
     paddingHorizontal: 16,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.colors.background,
+  },
+  inputContainerFocused: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.white,
   },
   inputIcon: {
     marginRight: 12,
@@ -225,31 +317,45 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: '100%',
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: theme.colors.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   eyeIcon: {
-    padding: 4,
+    padding: 8,
   },
   button: {
-    marginTop: 12,
+    marginTop: theme.spacing.sm,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: theme.colors.accent,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: theme.colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    ...theme.shadows.medium,
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   buttonText: {
-    fontWeight: '800',
-    color: '#FFFFFF',
-    fontSize: 18,
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    color: theme.colors.white,
+    fontSize: 16,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: theme.spacing.lg,
+  },
+  footerText: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+  },
+  footerLink: {
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

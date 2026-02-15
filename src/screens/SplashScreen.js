@@ -1,28 +1,26 @@
-// src/screens/SplashScreen.js
 import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, StatusBar, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet, StatusBar, Platform, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useWindowDimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import theme from '../theme/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     const checkUser = async () => {
       try {
         const user = await AsyncStorage.getItem('user');
-        // Give time for the animation/splash to be seen
+        // Give time for the app personality to be established
         setTimeout(() => {
           if (user) {
             navigation.replace('MainTabs');
           } else {
             navigation.replace('Login');
           }
-        }, 2000);
+        }, 2500);
       } catch (e) {
         navigation.replace('Login');
       }
@@ -30,77 +28,89 @@ const SplashScreen = () => {
     checkUser();
   }, [navigation]);
 
-  // Responsive sizes
-  const shortest = Math.min(width, height);
-  const appLogoWidth = Math.min(shortest * 0.55, 320); // cap for tablets
-  const companyLogoWidth = Math.min(width * 0.5, 260);
-
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar
         translucent
         backgroundColor="transparent"
-        barStyle={Platform.OS === 'android' ? 'dark-content' : 'dark-content'}
+        barStyle="light-content"
       />
-      <View style={styles.container}>
-        {/* Main App Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/logo.png')}
-            style={[styles.appLogo, { width: appLogoWidth }]}
-            resizeMode="contain"
-          />
-        </View>
 
-        {/* Powered by */}
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-          <Text style={styles.poweredText} allowFontScaling>
-            Powered by
-          </Text>
-          <Image
-            source={require('../assets/spargus_logo.jpeg')}
-            style={[styles.companyLogo, { width: companyLogoWidth }]}
-            resizeMode="contain"
-          />
+      <View style={styles.logoWrapper}>
+        <View style={styles.logoCircle}>
+          <Icon name="delivery-dining" size={80} color={theme.colors.primary} />
         </View>
+        <Text style={styles.appName}>RIDER FLEET</Text>
+        <Text style={styles.tagline}>Powering Logistics for the Future</Text>
       </View>
-    </SafeAreaView>
+
+      <View style={styles.footer}>
+        <Text style={styles.poweredText}>Powered by</Text>
+        <Image
+          source={require('../assets/spargus_logo.jpeg')}
+          style={[styles.companyLogo, { width: width * 0.45 }]}
+          resizeMode="contain"
+        />
+      </View>
+    </View>
   );
 };
 
 export default SplashScreen;
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#FFFFFF', // visible behind translucent status bar
-  },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logoContainer: {
-    flex: 1,
-    width: '100%',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  appLogo: {
-    aspectRatio: 1.2, // square logo keeps shape on all screens
-    height: undefined,
+  logoWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  logoCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: theme.colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.large,
+    marginBottom: 24,
+  },
+  appName: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: theme.colors.white,
+    letterSpacing: 4,
+  },
+  tagline: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
+    marginTop: 8,
+    letterSpacing: 1,
   },
   footer: {
-    width: '100%',
+    paddingBottom: 40,
     alignItems: 'center',
   },
   poweredText: {
-    fontSize: 16,
-    color: '#777',
-    marginBottom: 1,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   companyLogo: {
-    height: undefined,
-    aspectRatio: 4.2, // ~width:height for your Spargus banner; tweak if needed
+    height: 48,
+    aspectRatio: 3,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 8,
   },
 });
