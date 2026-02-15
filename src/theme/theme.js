@@ -4,17 +4,17 @@ import { Platform } from 'react-native';
 export const theme = {
   colors: {
     // Primary Brand Colors
-    primary: '#4F46E5',        // Indigo 600
-    primaryLight: '#818CF8',   // Indigo 400
-    primaryDark: '#3730A3',    // Indigo 800
+    primary: '#000000',        // Black
+    primaryLight: '#4B5563',   // Gray 600
+    primaryDark: '#000000',    // Black
 
     // Background & Surfaces
-    background: '#F9FAFB',     // Gray 50
+    background: '#FFFFFF',     // White
     surface: '#FFFFFF',        // White
     surfaceSecondary: '#F3F4F6', // Gray 100
 
     // Text Colors
-    text: '#111827',           // Gray 900
+    text: '#000000',           // Black
     textSecondary: '#4B5563',  // Gray 600
     textLight: '#9CA3AF',      // Gray 400
 
@@ -25,7 +25,7 @@ export const theme = {
     info: '#3B82F6',           // Blue 500
 
     // Others
-    accent: '#8B5CF6',         // Violet 500
+    accent: '#000000',         // Black
     border: '#E5E7EB',         // Gray 200
     white: '#FFFFFF',
     black: '#000000',

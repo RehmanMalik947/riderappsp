@@ -106,11 +106,11 @@ const OrderDetailsScreen = ({ route, navigation }) => {
           </View>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: isDelivered ? theme.colors.success + '15' : theme.colors.primary + '15' }
+            { backgroundColor: isDelivered ? theme.colors.success + '15' : theme.colors.info + '15' }
           ]}>
             <Text style={[
               styles.statusBadgeText,
-              { color: isDelivered ? theme.colors.success : theme.colors.primary }
+              { color: isDelivered ? theme.colors.success : theme.colors.info }
             ]}>
               {status === 'AssignedToRider' ? 'Processing' : status}
             </Text>
@@ -121,8 +121,8 @@ const OrderDetailsScreen = ({ route, navigation }) => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Information</Text>
 
-   
-           <View style={styles.infoRow}>
+
+          <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
               <Icon name="person" size={18} color={theme.colors.primary} />
             </View>
@@ -133,7 +133,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.infoDivider} />
 
-            <View style={styles.infoRow}>
+          <View style={styles.infoRow}>
             <View style={styles.infoIconWrapper}>
               <Icon name="person" size={18} color={theme.colors.primary} />
             </View>

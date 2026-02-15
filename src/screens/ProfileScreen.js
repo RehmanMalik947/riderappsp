@@ -44,7 +44,7 @@ const ProfileScreen = ({ navigation }) => {
     return (
       <Pressable
         onPress={onPress}
-        android_ripple={{ color: 'rgba(79, 70, 229, 0.1)' }}
+        android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
         style={({ pressed }) => [
           styles.row,
           pressed && Platform.OS === 'ios' && { opacity: 0.7 },

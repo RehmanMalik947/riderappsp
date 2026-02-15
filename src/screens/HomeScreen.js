@@ -90,14 +90,14 @@ const HomeScreen = ({ navigation, route }) => {
       case 'Delivered':
       case 'Completed': return theme.colors.success;
       case 'Cancelled': return theme.colors.error;
-      default: return theme.colors.primary;
+      default: return theme.colors.info;
     }
   };
 
   const renderItem = ({ item }) => (
     <Pressable
       onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
-      android_ripple={{ color: 'rgba(79, 70, 229, 0.1)' }}
+      android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
       style={({ pressed }) => [
         styles.card,
         Platform.OS === 'ios' && pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
@@ -174,7 +174,7 @@ const HomeScreen = ({ navigation, route }) => {
               <View style={styles.dot} />
               <Text style={styles.headerSubtitle}>
                 {statusFilter === 'Active'
-                  ? `${orders.filter((e)=>e.orderStatus === 'AssignedToRider').length} orders pending delivery`
+                  ? `${orders.filter((e) => e.orderStatus === 'AssignedToRider').length} orders pending delivery`
                   : `You've completed ${orders.length} deliveries`}
               </Text>
             </View>
