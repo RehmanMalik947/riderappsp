@@ -56,6 +56,7 @@ const SplashScreen = () => {
   );
 };
 
+
 export default SplashScreen;
 
 const styles = StyleSheet.create({
@@ -114,3 +115,4 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 });
+

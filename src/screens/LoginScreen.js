@@ -1,5 +1,5 @@
 // LoginScreen.js (no react-native-paper, iOS + Android compatible)
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,21 @@ import {
   StatusBar,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
+import api, { getCompanySetting } from '../service/api'
 import theme from '../theme/theme';
-import api from '../service/api'
 import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useBranding } from '../context/BrandingContext';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = () => {
+  const { branding, updateBranding, theme } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [companyCode, setCompanyCode] = useState('');
@@ -34,6 +38,29 @@ const LoginScreen = () => {
   const navigation = useNavigation();
   const app = getApp();
   const messaging = getMessaging(app);
+
+  const fetchBranding = async (code) => {
+    try {
+      const res = await getCompanySetting(code);
+      if (res.data) {
+        updateBranding(res.data);
+      }
+    } catch (error) {
+      console.log('Branding fetch error:', error?.message || error);
+    }
+  };
+
+  useEffect(() => {
+    if (companyCode.length >= 3) {
+      const timer = setTimeout(() => {
+        const code = companyCode.trim().toUpperCase();
+        if (code === 'RBK' || code === 'ALAMN') {
+          fetchBranding(code);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [companyCode]);
 
   const sendFcmTokenToBackend = async (userId) => {
     try {
@@ -58,7 +85,10 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!email || !password || !companyCode) {
-      alert('Please fill in all fields (Email, Password, and Company Code)');
+      Toast.show({
+        type: 'error',
+        text1: 'Please fill in all fields (Email, Password, and Company Code)',
+      });
       return;
     }
 
@@ -70,7 +100,10 @@ const LoginScreen = () => {
     } else if (code === 'ALAMN') {
       dbName = 'ALAmin';
     } else {
-      alert('Invalid Company Code');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Company Code',
+      });
       return;
     }
 
@@ -81,6 +114,9 @@ const LoginScreen = () => {
       // First save the dbName so interceptor can use it if needed for login itself
       // or subsequent calls.
       await AsyncStorage.setItem('x-client-db', dbName);
+
+      // Also ensure branding is fetched before proceeding or as part of login
+      await fetchBranding(code);
 
       const res = await api.post(`/Account/RiderLogin/${code}`, payload);
       const data = res?.data;
@@ -93,14 +129,18 @@ const LoginScreen = () => {
       }
     } catch (error) {
       const msg = error.response?.data?.message || error.message || 'Login failed';
-      alert(msg);
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: msg
+      })
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.primaryDark }]}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.primaryDark} />
 
       <KeyboardAvoidingView
@@ -113,20 +153,25 @@ const LoginScreen = () => {
         >
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoCircle}>
-                <Icon name="delivery-dining" size={48} color={theme.colors.white} />
+              <View style={[styles.logoCircle, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+                {branding.logoUrl ? (
+                  <Image source={{ uri: branding.logoUrl }} style={styles.logoImage} resizeMode="contain" />
+                ) : (
+                  <Icon name="delivery-dining" size={48} color={theme.colors.white} />
+                )}
               </View>
             </View>
-            <Text style={styles.title}>Rider Fleet</Text>
+            <Text style={styles.title}>{branding.companyName}</Text>
             <Text style={styles.subtitle}>Fast. Secure. Reliable.</Text>
           </View>
 
-          <View style={styles.form}>
+          <View style={[styles.form, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Email Address</Text>
               <View style={[
                 styles.inputContainer,
-                isEmailFocused && styles.inputContainerFocused
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+                isEmailFocused && { borderColor: theme.colors.primary, backgroundColor: theme.colors.white }
               ]}>
                 <Icon
                   name="mail-outline"
@@ -140,7 +185,7 @@ const LoginScreen = () => {
                   onChangeText={setEmail}
                   onFocus={() => setIsEmailFocused(true)}
                   onBlur={() => setIsEmailFocused(false)}
-                  style={styles.input}
+                  style={[styles.input, { color: theme.colors.text }]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   placeholderTextColor={theme.colors.textLight}
@@ -150,10 +195,11 @@ const LoginScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Password</Text>
               <View style={[
                 styles.inputContainer,
-                isPasswordFocused && styles.inputContainerFocused
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+                isPasswordFocused && { borderColor: theme.colors.primary, backgroundColor: theme.colors.white }
               ]}>
                 <Icon
                   name="lock-outline"
@@ -167,7 +213,7 @@ const LoginScreen = () => {
                   onChangeText={setPassword}
                   onFocus={() => setIsPasswordFocused(true)}
                   onBlur={() => setIsPasswordFocused(false)}
-                  style={styles.input}
+                  style={[styles.input, { color: theme.colors.text }]}
                   secureTextEntry={!showPassword}
                   placeholderTextColor={theme.colors.textLight}
                   selectionColor={theme.colors.primary}
@@ -182,10 +228,11 @@ const LoginScreen = () => {
               </View>
             </View>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Company Code</Text>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Company Code</Text>
               <View style={[
                 styles.inputContainer,
-                isCodeFocused && styles.inputContainerFocused
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+                isCodeFocused && { borderColor: theme.colors.primary, backgroundColor: theme.colors.white }
               ]}>
                 <Icon
                   name="business"
@@ -199,7 +246,7 @@ const LoginScreen = () => {
                   onChangeText={setCompanyCode}
                   onFocus={() => setIsCodeFocused(true)}
                   onBlur={() => setIsCodeFocused(false)}
-                  style={styles.input}
+                  style={[styles.input, { color: theme.colors.text }]}
                   autoCapitalize="characters"
                   placeholderTextColor={theme.colors.textLight}
                   selectionColor={theme.colors.primary}
@@ -213,6 +260,7 @@ const LoginScreen = () => {
               android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
               style={({ pressed }) => [
                 styles.button,
+                { backgroundColor: theme.colors.primary },
                 (pressed || loading) && { opacity: 0.9, transform: [{ scale: 0.99 }] },
               ]}
             >
@@ -225,19 +273,13 @@ const LoginScreen = () => {
                 </View>
               )}
             </Pressable>
-
-            {/* <View style={styles.footer}>
-              <Text style={styles.footerText}>Problem logging in? </Text>
-              <Pressable>
-                <Text style={styles.footerLink}>Contact Support</Text>
-              </Pressable>
-            </View> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

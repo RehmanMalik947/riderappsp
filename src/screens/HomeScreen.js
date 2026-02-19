@@ -16,8 +16,10 @@ import theme from '../theme/theme';
 import api from '../service/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
+import { useBranding } from '../context/BrandingContext';
 
 const HomeScreen = ({ navigation, route }) => {
+  const { branding, theme } = useBranding();
   const { statusFilter = 'Active' } = route.params || {};
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,14 @@ const HomeScreen = ({ navigation, route }) => {
       const response = await api.get(`/Order/GetAllRiderOrders/${riderId}`);
       if (response.data) {
         const filtered = response.data.filter(order => {
+          const orderDate = new Date(order.orderDate);
+          const isToday = orderDate.toDateString() === new Date().toDateString();
+
           if (statusFilter === 'Active') {
+            // Only show cancelled orders if they are from today
+            if (order.orderStatus === 'Cancelled') {
+              return isToday;
+            }
             return order.orderStatus !== 'Completed' && order.orderStatus !== 5;
           }
           return order.orderStatus === 'Completed';
@@ -100,13 +109,14 @@ const HomeScreen = ({ navigation, route }) => {
       android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
       style={({ pressed }) => [
         styles.card,
+        { backgroundColor: theme.colors.surface, borderColor: 'rgba(0,0,0,0.03)' },
         Platform.OS === 'ios' && pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
       ]}
     >
       <View style={styles.cardHeader}>
         <View>
-          <Text style={styles.orderLabel}>ORDER NO</Text>
-          <Text style={styles.orderNo}>#{item.orderNo}</Text>
+          <Text style={[styles.orderLabel, { color: theme.colors.textLight }]}>ORDER NO</Text>
+          <Text style={[styles.orderNo, { color: theme.colors.text }]}>#{item.orderNo}</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: getStatusColor(item.orderStatus) + '20' }]}>
           <Text style={[styles.badgeText, { color: getStatusColor(item.orderStatus) }]}>
@@ -115,14 +125,14 @@ const HomeScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: theme.colors.surfaceSecondary }]} />
 
       <View style={styles.infoSection}>
         <View style={styles.row}>
-          <View style={styles.iconContainer}>
+          <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '10' }]}>
             <Icon name="location-pin" size={18} color={theme.colors.primary} />
           </View>
-          <Text style={styles.infoText} numberOfLines={2}>{item.deliveryAddress}</Text>
+          <Text style={[styles.infoText, { color: theme.colors.textSecondary }]} numberOfLines={2}>{item.deliveryAddress}</Text>
         </View>
 
         <View style={styles.detailsRow}>
@@ -131,14 +141,14 @@ const HomeScreen = ({ navigation, route }) => {
             <Text style={styles.detailText}>{item.paymentMethod}</Text> */}
           </View>
 
-          <View style={styles.priceBadge}>
-            <Text style={styles.priceText}>Rs. {item.totalAmount}</Text>
+          <View style={[styles.priceBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+            <Text style={[styles.priceText, { color: theme.colors.text }]}>Rs. {item.totalAmount}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.viewButton}>
-        <Text style={styles.viewButtonText}>View Details</Text>
+      <View style={[styles.viewButton, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.viewButtonText, { color: theme.colors.white }]}>View Details</Text>
         <Icon name="chevron-right" size={20} color={theme.colors.white} />
       </View>
     </Pressable>
@@ -146,16 +156,16 @@ const HomeScreen = ({ navigation, route }) => {
 
   if (loading && !isRefreshing) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Fetching your orders...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Fetching your orders...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
       <FlatList
@@ -167,12 +177,19 @@ const HomeScreen = ({ navigation, route }) => {
         refreshing={isRefreshing}
         ListHeaderComponent={() => (
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {statusFilter === 'Active' ? 'Incoming Orders' : 'Order History'}
-            </Text>
+            <View style={styles.headerTop}>
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+                {statusFilter === 'Active' ? 'Incoming Orders' : 'Order History'}
+              </Text>
+              {statusFilter === 'Active' && branding.logoUrl && (
+                <View style={styles.logoHeaderWrapper}>
+                  <Image source={{ uri: branding.logoUrl }} style={styles.companyLogoHeader} resizeMode="contain" />
+                </View>
+              )}
+            </View>
             <View style={styles.headerDetail}>
-              <View style={styles.dot} />
-              <Text style={styles.headerSubtitle}>
+              <View style={[styles.dot, { backgroundColor: theme.colors.success }]} />
+              <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
                 {statusFilter === 'Active'
                   ? `${orders.filter((e) => e.orderStatus === 'AssignedToRider').length} orders pending delivery`
                   : `You've completed ${orders.length} deliveries`}
@@ -182,17 +199,18 @@ const HomeScreen = ({ navigation, route }) => {
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconCircle}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: theme.colors.surfaceSecondary }]}>
               <Icon name="auto-awesome-motion" size={48} color={theme.colors.textLight} />
             </View>
-            <Text style={styles.emptyTitle}>All caught up!</Text>
-            <Text style={styles.emptyText}>No {statusFilter.toLowerCase()} orders at the moment.</Text>
+            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>All caught up!</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No {statusFilter.toLowerCase()} orders at the moment.</Text>
           </View>
         )}
       />
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -224,6 +242,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.colors.text,
     letterSpacing: -0.5,
+    flex: 1,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoHeaderWrapper: {
+    width: 55,
+    height: 55,
+    borderRadius: 12,
+    backgroundColor: theme.colors.white,
+    padding: 6,
+    // ...theme.shadows.small,
+    // borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  companyLogoHeader: {
+    width: '100%',
+    height: '100%',
   },
   headerDetail: {
     flexDirection: 'row',

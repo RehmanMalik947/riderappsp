@@ -3,26 +3,27 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import theme from '../theme/theme';
+import { useBranding } from '../context/BrandingContext';
 
 import HomeScreen from '../screens/HomeScreen';
-import OrdersScreen from '../screens/HomeScreen'; // reuse for now
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
 const BottomTabs = () => {
+  const { theme } = useBranding();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }],
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textLight,
         tabBarIcon: ({ focused }) => {
           let iconName = 'home';
 
           if (route.name === 'HomeTab') iconName = 'home';
-          if (route.name === 'OrdersTab') iconName = 'list-alt';
           if (route.name === 'ProfileTab') iconName = 'person';
 
           return (
@@ -53,7 +54,7 @@ const BottomTabs = () => {
       />
       <Tab.Screen
         name="OrdersTab"
-        component={HomeScreen}
+        component={HomeScreen} // using HomeScreen for history too as it was before
         initialParams={{ statusFilter: 'Delivered' }}
         options={{ title: 'History' }}
       />
@@ -62,14 +63,13 @@ const BottomTabs = () => {
         component={ProfileScreen}
         options={{ title: 'Profile' }}
       />
+
     </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: theme.colors.background,
-    borderTopColor: theme.colors.border,
     height: 64,
     paddingBottom: 6,
   },

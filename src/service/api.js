@@ -26,14 +26,20 @@ api.interceptors.request.use(
   }
 );
 
+// Get company branding settings
+export const getCompanySetting = (code) => {
+  return api.get(`/Company/GetCompanySetting/${code}`);
+};
 
 // Logout helper
 export const logout = async () => {
   try {
     await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem("branding");
   } catch (error) {
     console.error("Logout error:", error);
   }
 };
 
 export default api;
+

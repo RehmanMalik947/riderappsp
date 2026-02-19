@@ -14,9 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import theme from '../theme/theme';
-import api from '../service/api'; // Assuming you have the `api` instance already set up
+import api from '../service/api';
+import { useBranding } from '../context/BrandingContext';
 
 const OrderDetailsScreen = ({ route, navigation }) => {
+  const { theme } = useBranding();
   const { orderId } = route.params;
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState('Loading...');
@@ -47,7 +49,6 @@ const OrderDetailsScreen = ({ route, navigation }) => {
       await api.put(`/Order/updateStatus/${orderId}`, '4', {
         headers: {
           'Content-Type': 'application/json-patch+json',
-          'X-Client-Db': 'Rubaika',
           'Accept': '*/*'
         }
       });
@@ -60,11 +61,11 @@ const OrderDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const formatAmount = (amount) => `Rs. ${amount.toLocaleString()}`;
+  const formatAmount = (amount) => `Rs. ${amount?.toLocaleString()}`;
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
@@ -73,11 +74,11 @@ const OrderDetailsScreen = ({ route, navigation }) => {
 
   if (error || !order) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { backgroundColor: theme.colors.background }]}>
         <Icon name="error-outline" size={48} color={theme.colors.error} />
-        <Text style={styles.errorText}>{error || 'Order not found'}</Text>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+        <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>{error || 'Order not found'}</Text>
+        <Pressable style={[styles.backButton, { backgroundColor: theme.colors.primary }]} onPress={() => navigation.goBack()}>
+          <Text style={[styles.backButtonText, { color: theme.colors.white }]}>Go Back</Text>
         </Pressable>
       </View>
     );
@@ -86,23 +87,23 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   const isDelivered = status === 'Delivered' || status === 'Completed' || status === 4;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
+        <Pressable onPress={() => navigation.goBack()} style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}>
           <Icon name="arrow-back" size={24} color={theme.colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Order Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         <View style={styles.iconButtonSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Status Card */}
-        <View style={styles.statusCard}>
+        <View style={[styles.statusCard, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.statusInfo}>
-            <Text style={styles.orderLabel}>ORDER NO</Text>
-            <Text style={styles.orderNo}>#{order.orderNo}</Text>
+            <Text style={[styles.orderLabel, { color: theme.colors.textLight }]}>ORDER NO</Text>
+            <Text style={[styles.orderNo, { color: theme.colors.text }]}>#{order.orderNo}</Text>
           </View>
           <View style={[
             styles.statusBadge,
@@ -118,86 +119,85 @@ const OrderDetailsScreen = ({ route, navigation }) => {
         </View>
 
         {/* Info Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Information</Text>
-
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: 'rgba(0,0,0,0.03)' }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Information</Text>
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
+            <View style={[styles.infoIconWrapper, { backgroundColor: theme.colors.primary + '10' }]}>
               <Icon name="person" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Customer Name</Text>
-              <Text style={styles.infoValue}>{order?.customer?.name}</Text>
+              <Text style={[styles.infoLabel, { color: theme.colors.textLight }]}>Customer Name</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order?.customer?.name}</Text>
             </View>
           </View>
-          <View style={styles.infoDivider} />
+          <View style={[styles.infoDivider, { backgroundColor: theme.colors.surfaceSecondary }]} />
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
-              <Icon name="person" size={18} color={theme.colors.primary} />
+            <View style={[styles.infoIconWrapper, { backgroundColor: theme.colors.primary + '10' }]}>
+              <Icon name="phone" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Customer Phone</Text>
-              <Text style={styles.infoValue}>{order?.customer?.phoneNumber}</Text>
+              <Text style={[styles.infoLabel, { color: theme.colors.textLight }]}>Customer Phone</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order?.customer?.phoneNumber}</Text>
             </View>
           </View>
-          <View style={styles.infoDivider} />
+          <View style={[styles.infoDivider, { backgroundColor: theme.colors.surfaceSecondary }]} />
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
+            <View style={[styles.infoIconWrapper, { backgroundColor: theme.colors.primary + '10' }]}>
               <Icon name="calendar-today" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Order Date</Text>
-              <Text style={styles.infoValue}>{new Date(order.orderDate).toLocaleDateString()} at {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+              <Text style={[styles.infoLabel, { color: theme.colors.textLight }]}>Order Date</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{new Date(order.orderDate).toLocaleDateString()} at {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
             </View>
           </View>
 
-          <View style={styles.infoDivider} />
+          <View style={[styles.infoDivider, { backgroundColor: theme.colors.surfaceSecondary }]} />
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
+            <View style={[styles.infoIconWrapper, { backgroundColor: theme.colors.primary + '10' }]}>
               <Icon name="location-on" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Delivery Address</Text>
-              <Text style={styles.infoValue}>{order.deliveryAddress}</Text>
+              <Text style={[styles.infoLabel, { color: theme.colors.textLight }]}>Delivery Address</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.deliveryAddress}</Text>
             </View>
           </View>
 
-          <View style={styles.infoDivider} />
+          <View style={[styles.infoDivider, { backgroundColor: theme.colors.surfaceSecondary }]} />
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
+            <View style={[styles.infoIconWrapper, { backgroundColor: theme.colors.primary + '10' }]}>
               <Icon name="payment" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Payment</Text>
-              <Text style={styles.infoValue}>({order.paymentStatus})</Text>
+              <Text style={[styles.infoLabel, { color: theme.colors.textLight }]}>Payment</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>({order.paymentStatus})</Text>
             </View>
           </View>
         </View>
 
         {/* Items Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Summary</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: 'rgba(0,0,0,0.03)' }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Order Summary</Text>
           {order.orderLines.map((line, index) => (
             <View key={index}>
               <View style={styles.itemRow}>
                 <View style={styles.itemMain}>
-                  <Text style={styles.itemName}>{line.product?.name || 'Package'}</Text>
-                  <Text style={styles.itemQty}>Qty: {line.quantity}</Text>
+                  <Text style={[styles.itemName, { color: theme.colors.text }]}>{line.product?.name || 'Package'}</Text>
+                  <Text style={[styles.itemQty, { color: theme.colors.textSecondary }]}>Qty: {line.quantity}</Text>
                 </View>
-                <Text style={styles.itemPrice}>{formatAmount(line.amount)}</Text>
+                <Text style={[styles.itemPrice, { color: theme.colors.text }]}>{formatAmount(line.amount)}</Text>
               </View>
-              {index < order.orderLines.length - 1 && <View style={styles.itemDivider} />}
+              {index < order.orderLines.length - 1 && <View style={[styles.itemDivider, { backgroundColor: theme.colors.surfaceSecondary }]} />}
             </View>
           ))}
 
-          <View style={styles.totalSection}>
-            <Text style={styles.totalLabel}>Total Payable</Text>
-            <Text style={styles.totalValue}>{formatAmount(order.totalAmount)}</Text>
+          <View style={[styles.totalSection, { borderTopColor: theme.colors.surfaceSecondary }]}>
+            <Text style={[styles.totalLabel, { color: theme.colors.text }]}>Total Payable</Text>
+            <Text style={[styles.totalValue, { color: theme.colors.primary }]}>{formatAmount(order.totalAmount)}</Text>
           </View>
         </View>
 
@@ -207,11 +207,12 @@ const OrderDetailsScreen = ({ route, navigation }) => {
             android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
             style={({ pressed }) => [
               styles.actionButton,
+              { backgroundColor: theme.colors.success },
               pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
             ]}
           >
             <Icon name="check-circle" size={20} color={theme.colors.white} />
-            <Text style={styles.actionButtonText}>Mark as Delivered</Text>
+            <Text style={[styles.actionButtonText, { color: theme.colors.white }]}>Mark as Delivered</Text>
           </Pressable>
         )}
 
@@ -220,6 +221,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

@@ -10,11 +10,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import theme from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import theme from '../theme/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBranding } from '../context/BrandingContext';
+import { logout } from '../service/api';
 
 const ProfileScreen = ({ navigation }) => {
+  const { theme, resetBranding } = useBranding();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -33,7 +36,8 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
+      await logout();
+      await resetBranding();
       navigation.replace('Login');
     } catch (error) {
       console.error('Error during logout', error);
@@ -56,20 +60,20 @@ const ProfileScreen = ({ navigation }) => {
               <Icon name={icon} size={20} color={color} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{title}</Text>
-              {value && <Text style={styles.rowValue}>{value}</Text>}
+              <Text style={[styles.rowTitle, { color: theme.colors.text }]}>{title}</Text>
+              {value && <Text style={[styles.rowValue, { color: theme.colors.textSecondary }]}>{value}</Text>}
             </View>
           </View>
           <Icon name="chevron-right" size={20} color={theme.colors.textLight} />
         </View>
-        {!isLast && <View style={styles.rowDivider} />}
+        {!isLast && <View style={[styles.rowDivider, { backgroundColor: 'rgba(0,0,0,0.03)' }]} />}
       </Pressable>
     );
   };
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </SafeAreaView>
@@ -77,39 +81,27 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Profile Section */}
         <View style={styles.header}>
           <View style={styles.avatarWrapper}>
-            <View style={styles.avatarCircle}>
+            <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primary }]}>
               <Icon name="person" size={40} color={theme.colors.white} />
             </View>
-            <View style={styles.onlineIndicator} />
+            <View style={[styles.onlineIndicator, { backgroundColor: theme.colors.success, borderColor: theme.colors.background }]} />
           </View>
 
-          <Text style={styles.userName}>{user.userName || 'Rider'}</Text>
-          <Text style={styles.userRole}>Verified Logistics Partner</Text>
-
-          {/* <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>4.9</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-            <View style={styles.vDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>124</Text>
-              <Text style={styles.statLabel}>Deliveries</Text>
-            </View>
-          </View> */}
+          <Text style={[styles.userName, { color: theme.colors.text }]}>{user.userName || 'Rider'}</Text>
+          <Text style={[styles.userRole, { color: theme.colors.textSecondary }]}>Verified Logistics Partner</Text>
         </View>
 
         {/* Account Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ACCOUNT DETAILS</Text>
-          <View style={styles.rowCard}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.textLight }]}>ACCOUNT DETAILS</Text>
+          <View style={[styles.rowCard, { backgroundColor: theme.colors.surface }]}>
             <Row
               icon="phone-iphone"
               title="Phone"
@@ -128,20 +120,20 @@ const ProfileScreen = ({ navigation }) => {
 
         {/* Preferences */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>PREFERENCES</Text>
-          <View style={styles.rowCard}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.textLight }]}>PREFERENCES</Text>
+          <View style={[styles.rowCard, { backgroundColor: theme.colors.surface }]}>
             <Row icon="notifications-none" title="Notifications" value="Enabled" onPress={() => { }} />
             <Row
               icon="security"
               title="Privacy & Safety"
               onPress={() => navigation.navigate('PrivacyPolicy')}
             />
-            <Row
+           {/*} <Row
               icon="help-outline"
               title="Help Center"
               onPress={() => { }}
               isLast={true}
-            />
+            />*/}
           </View>
         </View>
 
@@ -151,18 +143,20 @@ const ProfileScreen = ({ navigation }) => {
           android_ripple={{ color: 'rgba(239, 68, 68, 0.1)' }}
           style={({ pressed }) => [
             styles.logoutButton,
+            { backgroundColor: theme.colors.error + '10', borderColor: theme.colors.error + '20' },
             pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
           ]}
         >
           <Icon name="logout" size={20} color={theme.colors.error} />
-          <Text style={styles.logoutText}>Sign Out</Text>
+          <Text style={[styles.logoutText, { color: theme.colors.error }]}>Sign Out</Text>
         </Pressable>
 
-        <Text style={styles.versionText}>Version 1.0.4 (Stable)</Text>
+        <Text style={[styles.versionText, { color: theme.colors.textLight }]}>Version 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
